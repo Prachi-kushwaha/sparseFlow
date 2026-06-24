@@ -95,9 +95,14 @@ def gather_kv(kv_cache: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
     Bi, Hi, S, TOP_K = indices.shape
     assert (B, H) == (Bi, Hi), "kv_cache and indices must share (B, H)"
 
+    if torch.any(indices >= S_kv) or torch.any(indices < 0):
+        raise ValueError(
+            f"indices contain value outside of this range [0, S_kv={S_kv}]"
+        )
+
     out = torch.empty((B, H, S, TOP_K, D), device=kv_cache.device, dtype=kv_cache.dtype)
 
-    grid = (B * H * S)
+    grid = (B * H * S,)
 
     _gather_kv_kernel[grid](
         kv_cache, indices, out,
