@@ -14,7 +14,7 @@ import triton.language as tl
     key=["D", "TOP_K"],
 )
 @triton.jit
-def _gather_kv_kernel(
+def gather_kv_kernel(
     kv_cache_ptr,      # (B, H, S_kv, D) — flat contiguous buffer, K or V
     indices_ptr,       # (B, H, S, TOP_K) — local indices, int64
     out_ptr,           # (B, H, S, TOP_K, D) — output buffer

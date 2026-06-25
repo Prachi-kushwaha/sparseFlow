@@ -1,8 +1,8 @@
 from typing import Literal
 import torch
 import torch.distributed as dist
-from topk_indices import build_topk
-from gather_kv import gather_kv
+from indexing import build_topk
+from kv_ops import cp_gather_kv_kernel
 
 ShardingModel = Literal["packed", "interleaved"]
 
@@ -130,7 +130,7 @@ def cp_boundary_exchange(kv_cache_local: torch.Tensor, global_idx: torch.Tensor,
     recv_idx, recv_counts = exchange_counts_and_payload(owner_rank, local_idx, cp_world)
 
     if recv_idx.numel() > 0:
-        gathered_for_others = kv_cache_local[recv_idx]
+        gathered_for_others = cp_gather_kv_kernel(kv_cache_local, global_idx)
     else:
         gathered_for_others = torch.empty((0, D), dtype=kv_cache_local.dtype, device=device)
 

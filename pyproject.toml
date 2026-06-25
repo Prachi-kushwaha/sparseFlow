@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+# IMPORTANT: this name must be globally unique on PyPI. "sparseflow"
+# may already be taken -- check https://pypi.org/project/sparseflow/
+# before you commit to it anywhere (README, GitHub repo description,
+# etc). If taken, common fallbacks: "sparseflow-attn", "sparse-flow",
+# "sparseflow-kernels".
+name = "sparseflow"
+version = "0.1.0"
+description = "Sparse attention primitives for production transformer training -- indexing, KV gather, context-parallel-aware kernels in PyTorch + Triton"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"  # match your use of X | None union syntax throughout the codebase
+authors = [
+    { name = "Prachi Kushwaha" },
+]
+keywords = ["pytorch", "triton", "attention", "sparse-attention", "llm", "megatron", "context-parallelism"]
+
+
+# Pinned loosely on purpose: torch and triton both ship breaking
+# changes across minor versions fairly often. A tight pin (e.g. =2.3.0)
+# would force every downstream user onto your exact version, which is
+# exactly the kind of dependency conflict that makes people uninstall
+# a library. Lower-bound only, let the user's environment pick the rest.
+dependencies = [
+    "torch>=2.3",
+    "triton>=2.1",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+# extras for contributors -- a regular user doing `pip install sparseflow`
+# never needs these, only people running your test suite or building docs do.
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[project.urls]
+Repository = "https://github.com/Prachi-kushwaha/sparseFlow"
+Issues = "https://github.com/Prachi-kushwaha/sparseFlow/issues"
+
+[tool.hatch.build.targets.wheel]
+# tells hatchling which directory is the actual importable package --
+# without this, hatchling can sometimes guess wrong if there are
+# multiple top-level directories (tests/, sparse_attention/, etc).
+packages = ["sparse_attention"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# multi_rank/ contains torchrun-launched scripts, not pytest-collectible
+# tests -- explicitly excluding them from collection avoids pytest
+# trying (and failing) to import/run them as regular test files.
+norecursedirs = ["tests/multi_rank"]
