@@ -70,19 +70,20 @@ class TestBuildTopkCPCorrectness:
         cp_rank, cp_world, shard_size = 2, 4, 32
         scores = torch.randn(2, 4, 8, shard_size)
 
-        _, local_idx = build_topk(scores, k=2, dim=-1, sorted=False)
+        _, local_idx = build_topk(scores, k=2)
         global_idx = cp_globalize_indices(local_idx, cp_rank, cp_world, shard_size, ShardingModel="interleaved")
         assert torch.all(global_idx % cp_world == cp_rank)
 
     def test_cp_rank_out_of_range_raises(self):
         scores = torch.randn(1, 1, 1, 10)
         with pytest.raises(ValueError, match="out of range"):
-            build_topk(scores, top_k=3, cp_rank=4, cp_world=4)
+            indices = build_topk(scores, top_k=3)
+            cp_globalize_indices(indices, cp_rank=4, cp_world=4, shard_size=4, ShardingModel="packed")
 
     def test_top_k_exceeds_local_s_kv_raises(self):
         scores = torch.randn(1, 1, 1, 10)
         with pytest.raises(ValueError, match="exceeds local S_kv"):
-            build_topk(scores, top_k=20, cp_rank=0, cp_world=4)
+            build_topk(scores, top_k=20)
 
 
 class TestCPLocalizeRoundTrip:
@@ -98,9 +99,7 @@ class TestCPLocalizeRoundTrip:
         cp_world, shard_size = 4, 16
         scores = torch.randn(1, 2, 4, shard_size)
 
-        _, indices = build_topk(
-            scores, top_k=2, dim=-1, sorted=False
-        )
+        _, indices = build_topk(scores, top_k=2)
 
         global_idx = cp_globalize_indices(indices, cp_rank, cp_world, shard_size, ShardingModel=sharding_mode)
         owner_rank, local_idx = cp_localize_indices(
@@ -122,9 +121,7 @@ class TestCPLocalizeRoundTrip:
         cp_rank, cp_world, shard_size = 1, 4, 8
         scores = torch.randn(1, 1, 3, shard_size)
 
-        _, indices = build_topk(
-            scores, top_k=2, dim=-1, sorted=False
-        )
+        _, indices = build_topk( scores, top_k=2)
 
         global_idx = cp_globalize_indices(indices, cp_rank, cp_world, shard_size, ShardingModel=sharding_mode)
         _, local_idx = cp_localize_indices(
@@ -148,9 +145,7 @@ class TestGatherKVGuard:
         cp_rank, cp_world, shard_size = 1, 4, 8
         scores = torch.randn(1, 1, 3, shard_size)
 
-        _, indices = build_topk(
-            scores, top_k=2, dim=-1, sorted=False
-        )
+        _, indices = build_topk(scores, top_k=2)
 
         global_idx = cp_globalize_indices(indices, cp_rank, cp_world, shard_size, ShardingModel="interleaved")
 
@@ -172,7 +167,7 @@ class TestGatherKVGuard:
         cp_rank, cp_world, shard_size = 1, 4, 8
         scores = torch.randn(1, 1, 3, shard_size)
 
-        _, indices = build_topk(scores, top_k=2, dim=-1, sorted=False)
+        _, indices = build_topk(scores, top_k=2)
 
         global_idx = cp_globalize_indices(indices, cp_rank, cp_world, shard_size, ShardingModel="interleaved")
 
@@ -198,7 +193,7 @@ class TestGatherKVOnGPU:
         kv_cache = torch.randn(B, H, shard_size, D, device="cuda")
         scores = torch.randn(B, H, S, shard_size, device="cuda")
 
-        _, indices = build_topk(scores, top_k=2, dim=-1, sorted=False)
+        _, indices = build_topk(scores, top_k=2)
 
         global_idx = cp_globalize_indices(indices, cp_rank, cp_world, shard_size, ShardingModel="interleaved")
 
@@ -227,7 +222,7 @@ class TestGatherKVOnGPU:
         kv_cache = torch.randn(B, H, shard_size, D, device="cuda")
         scores = torch.randn(B, H, S, shard_size, device="cuda")
 
-        _, indices = build_topk(scores, top_k=2, dim=-1, sorted=False)
+        _, indices = build_topk(scores, top_k=2)
 
         global_idx = cp_globalize_indices(indices, cp_rank, cp_world, shard_size, ShardingModel="interleaved")
 
